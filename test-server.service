@@ -1,0 +1,13 @@
+[Unit]
+Description=Test Web Server
+After=network.target
+
+[Service]
+Type=simple
+User=azureuser
+WorkingDirectory=/home/azureuser
+ExecStart=/usr/bin/python3 /home/azureuser/test-server.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
