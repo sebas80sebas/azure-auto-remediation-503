@@ -1,17 +1,17 @@
-# Sistema de Monitoreo y Reinicio Automático de VMs en Azure
+# Automated VM Monitoring and Restart System in Azure
 
-Sistema automatizado que detecta errores HTTP 503 en un servidor web y reinicia automáticamente una VM de producción utilizando Azure Application Insights, Log Analytics y Automation Accounts.
+Automated system that detects HTTP 503 errors on a web server and automatically restarts a production VM using Azure Application Insights, Log Analytics, and Automation Accounts.
 
-## 📋 Tabla de Contenidos
+## Table of Contents
 
-- [Arquitectura](#arquitectura)
-- [Requisitos Previos](#requisitos-previos)
-- [Componentes del Sistema](#componentes-del-sistema)
-- [Instalación y Configuración](#instalación-y-configuración)
+- [Architecture](#architecture)
+- [Prerequisites](#prerequisites)
+- [System Components](#system-components)
+- [Installation and Configuration](#installation-and-configuration)
 - [Testing](#testing)
 - [Troubleshooting](#troubleshooting)
 
-## 🏗️ Arquitectura
+## Architecture
 
 ```
 ┌─────────────────┐
@@ -22,16 +22,16 @@ Sistema automatizado que detecta errores HTTP 503 en un servidor web y reinicia 
 ┌─────────────────────────┐
 │  VM Web Server (Nginx)  │
 │  - Python Flask App     │
-│  - Simula códigos HTTP  │
+│  - Simulates HTTP codes │
 └────────┬────────────────┘
          │
          ▼
 ┌──────────────────────────┐
 │ Application Insights     │
 │ - Availability Tests     │
-│ - Detecta HTTP 503       │
+│ - Detects HTTP 503       │
 └────────┬─────────────────┘
-         │ Alerta
+         │ Alert
          ▼
 ┌──────────────────────────┐
 │  Azure Monitor           │
@@ -42,44 +42,44 @@ Sistema automatizado que detecta errores HTTP 503 en un servidor web y reinicia 
 ┌──────────────────────────┐
 │  Action Group            │
 └────────┬─────────────────┘
-         │ Ejecuta
+         │ Execute
          ▼
 ┌──────────────────────────┐
 │  Automation Account      │
 │  - PowerShell Runbook    │
 │  - Managed Identity      │
 └────────┬─────────────────┘
-         │ Reinicia
+         │ Restart
          ▼
 ┌──────────────────────────┐
-│  VM Producción           │
+│  Production VM           │
 │  (vm-ecommerce-prod)     │
 └──────────────────────────┘
 ```
 
-## ✅ Requisitos Previos
+## Prerequisites
 
-- Suscripción activa de Azure
-- Permisos de Contributor en el Resource Group
-- Cliente SSH (para configurar VMs Linux)
-- Azure CLI (opcional, para gestión desde terminal)
+- Active Azure subscription
+- Contributor permissions on the Resource Group
+- SSH client (for configuring Linux VMs)
+- Azure CLI (optional, for terminal management)
 
-## 🔧 Componentes del Sistema
+## System Components
 
 ### 1. VM Web Server (vm-webserver-test)
-- **SO**: Ubuntu Server 22.04 LTS
-- **Tamaño**: Standard_B2s
-- **Servicios**: Nginx + Python Flask
-- **Propósito**: Simular diferentes códigos HTTP para testing
+- **OS**: Ubuntu Server 22.04 LTS
+- **Size**: Standard_B2s
+- **Services**: Nginx + Python Flask
+- **Purpose**: Simulate different HTTP codes for testing
 
-### 2. VM Producción (vm-ecommerce-prod)
-- **SO**: Windows o Ubuntu 22.04
-- **Tamaño**: Standard_B2s
-- **Propósito**: VM que se reinicia automáticamente ante errores
+### 2. Production VM (vm-ecommerce-prod)
+- **OS**: Windows or Ubuntu 22.04
+- **Size**: Standard_B2s
+- **Purpose**: VM that restarts automatically on errors
 
 ### 3. Application Insights (appi-monitoring-test)
-- **Availability Test**: Monitoreo cada 5 minutos
-- **Ubicaciones**: West Europe, North Europe, UK South
+- **Availability Test**: Monitoring every 5 minutes
+- **Locations**: West Europe, North Europe, UK South
 - **Endpoint**: `/health`
 
 ### 4. Automation Account (aa-vm-restart-automation)
@@ -88,27 +88,27 @@ Sistema automatizado que detecta errores HTTP 503 en un servidor web y reinicia 
 - **Runbook**: Restart-VMOn503
 
 ### 5. Alert Rule
-- **Query**: Detecta HTTP 503 en ventanas de 5 minutos
-- **Frecuencia**: Evaluación cada 5 minutos
-- **Severidad**: Critical (Sev 0)
+- **Query**: Detects HTTP 503 in 5-minute windows
+- **Frequency**: Evaluation every 5 minutes
+- **Severity**: Critical (Sev 0)
 
-## 🚀 Instalación y Configuración
+## Installation and Configuration
 
-### Paso 1: Crear Resource Group
+### Step 1: Create Resource Group
 
 ```bash
-# Desde Azure Portal
+# From Azure Portal
 Resource Groups → + Create → rg-test-monitoring
 ```
 
-### Paso 2: Desplegar VM Web Server
+### Step 2: Deploy VM Web Server
 
-#### 2.1 Crear VM
+#### 2.1 Create VM
 
 ```
 Azure Portal → Virtual Machines → + Create
 
-Configuración:
+Configuration:
 - Resource Group: rg-test-monitoring
 - VM name: vm-webserver-test
 - Region: West Europe
@@ -119,67 +119,67 @@ Configuración:
 - Inbound ports: 80 (HTTP), 22 (SSH)
 ```
 
-#### 2.2 Configurar SSH Local
+#### 2.2 Configure Local SSH
 
 ```bash
-# Crear directorio .ssh si no existe
+# Create .ssh directory if it doesn't exist
 mkdir -p ~/.ssh
 
-# Mover la clave descargada
+# Move the downloaded key
 mv ~/Downloads/vm-webserver-test_key.pem ~/.ssh/vm-webserver-test_key.pem
 
-# Cambiar permisos (obligatorio para SSH)
+# Change permissions (mandatory for SSH)
 chmod 600 ~/.ssh/vm-webserver-test_key.pem
 
-# Conectar a la VM
-ssh -i ~/.ssh/vm-webserver-test_key.pem azureuser@<IP-PUBLICA>
+# Connect to the VM
+ssh -i ~/.ssh/vm-webserver-test_key.pem azureuser@<PUBLIC-IP>
 ```
 
-#### 2.3 Instalar Software en la VM
+#### 2.3 Install Software on the VM
 
 ```bash
-# Actualizar sistema
+# Update system
 sudo apt update && sudo apt upgrade -y
 
-# Instalar Nginx
+# Install Nginx
 sudo apt install nginx -y
 
-# Verificar instalación
+# Verify installation
 curl http://localhost
 
-# Instalar Python y Flask
+# Install Python and Flask
 sudo apt install python3-pip -y
 sudo pip3 install flask
 ```
 
-#### 2.4 Crear Aplicación Flask
+#### 2.4 Create Flask Application
 
 ```bash
 sudo nano /home/azureuser/test-server.py
 ```
 
-Pegar el contenido del script Python (proporcionado en documentación).
+Paste the Python script content (provided in documentation).
 
-#### 2.5 Crear Servicio Systemd
+#### 2.5 Create Systemd Service
 
 ```bash
 sudo nano /etc/systemd/system/test-server.service
 ```
 
-Pegar la configuración del servicio (proporcionada en documentación).
+Paste the service configuration (provided in documentation).
 
 ```bash
-# Activar y arrancar el servicio
+# Enable and start the service
 sudo systemctl daemon-reload
 sudo systemctl enable test-server
 sudo systemctl start test-server
 
-# Verificar estado
+# Verify status
 sudo systemctl status test-server
 curl http://localhost:5000/health
 ```
 
-#### 2.6 Configurar Nginx como Proxy Reverso
+#### 2.6 Configure Nginx as Reverse Proxy
 
 ```bash
 sudo nano /etc/nginx/sites-available/default
@@ -201,12 +201,12 @@ server {
 ```
 
 ```bash
-# Verificar configuración y reiniciar
+# Verify configuration and restart
 sudo nginx -t
 sudo systemctl restart nginx
 ```
 
-#### 2.7 Abrir Puerto 80 en NSG
+#### 2.7 Open Port 80 in NSG
 
 ```
 VM → Networking → Add inbound port rule
@@ -215,7 +215,7 @@ VM → Networking → Add inbound port rule
 - Name: Allow-HTTP
 ```
 
-### Paso 3: Crear VM de Producción
+### Step 3: Create Production VM
 
 ```
 Azure Portal → Virtual Machines → + Create
@@ -227,7 +227,7 @@ Azure Portal → Virtual Machines → + Create
 - Size: Standard_B2s
 ```
 
-### Paso 4: Configurar Application Insights
+### Step 4: Configure Application Insights
 
 ```
 Portal → Application Insights → + Create
@@ -237,24 +237,24 @@ Portal → Application Insights → + Create
 - Region: West Europe
 ```
 
-#### 4.1 Crear Availability Test
+#### 4.1 Create Availability Test
 
 ```
 Application Insights → Availability → Add Standard test
 
 - Test name: test-webserver-health
-- URL: http://<IP-VM>/health
+- URL: http://<VM-IP>/health
 - Test frequency: 5 minutes
 - Test locations: West Europe, North Europe, UK South
 - Test timeout: 30 seconds
 - Enable retries: No
 ```
 
-**⏱️ Esperar 5-10 minutos** para que empiecen a llegar datos.
+**Wait 5-10 minutes** for data to start arriving.
 
-### Paso 5: Configurar Automation Account
+### Step 5: Configure Automation Account
 
-#### 5.1 Crear Automation Account
+#### 5.1 Create Automation Account
 
 ```
 Portal → Automation Accounts → + Create
@@ -264,7 +264,7 @@ Portal → Automation Accounts → + Create
 - Region: West Europe
 ```
 
-#### 5.2 Habilitar Managed Identity
+#### 5.2 Enable Managed Identity
 
 ```
 Automation Account → Identity → System assigned
@@ -272,9 +272,9 @@ Automation Account → Identity → System assigned
 - Save
 ```
 
-**📝 Copiar el Object ID** generado.
+**Copy the generated Object ID**.
 
-#### 5.3 Asignar Permisos
+#### 5.3 Assign Permissions
 
 ```
 Portal → Resource Groups → rg-test-monitoring → Access control (IAM)
@@ -286,7 +286,7 @@ Add role assignment:
 - Review + assign
 ```
 
-#### 5.4 Crear Runbook
+#### 5.4 Create Runbook
 
 ```
 Automation Account → Runbooks → + Create a runbook
@@ -296,25 +296,25 @@ Automation Account → Runbooks → + Create a runbook
 - Runtime version: 7.2
 ```
 
-Pegar el código PowerShell (proporcionado en documentación).
+Paste the PowerShell code (provided in documentation).
 
-**💾 Save → Publish → Yes**
+**Save → Publish → Yes**
 
-#### 5.5 Probar Runbook Manualmente
+#### 5.5 Test Runbook Manually
 
 ```
 Runbook → Start
 
-Parámetros (opcional):
+Parameters (optional):
 - ResourceGroupName: rg-test-monitoring
 - VMName: vm-ecommerce-prod
 ```
 
-Verificar en el Output que se ejecuta correctamente.
+Verify in the Output that it executes correctly.
 
-### Paso 6: Configurar Alertas
+### Step 6: Configure Alerts
 
-#### 6.1 Crear Action Group
+#### 6.1 Create Action Group
 
 ```
 Monitor → Alerts → Action groups → + Create
@@ -332,7 +332,7 @@ Actions:
 - Enable common alert schema: No
 ```
 
-#### 6.2 Crear Alert Rule
+#### 6.2 Create Alert Rule
 
 ```
 Monitor → Alerts → + Create → Alert rule
@@ -341,7 +341,7 @@ Scope: appi-monitoring-test
 Condition: Custom log search
 ```
 
-**Query KQL:**
+**KQL Query:**
 
 ```kusto
 availabilityResults
@@ -353,7 +353,7 @@ availabilityResults
 | where Count503 >= 1
 ```
 
-**Configuración:**
+**Configuration:**
 
 ```
 Measurement: Count503
@@ -367,125 +367,125 @@ Severity: Critical (Sev 0)
 Alert rule name: alert-503-restart-vm
 ```
 
-## 🧪 Testing
+## Testing
 
-### Test 1: Verificar Monitoreo Normal
+### Test 1: Verify Normal Monitoring
 
 ```bash
-# Verificar estado saludable
-curl http://<IP-VM>/health
+# Verify healthy status
+curl http://<VM-IP>/health
 
-# Debería retornar: 200 OK
+# Should return: 200 OK
 ```
 
-Esperar 10 minutos y verificar en:
-- **Application Insights → Availability**: Puntos verdes en el gráfico
+Wait 10 minutes and verify in:
+- **Application Insights → Availability**: Green dots on the chart
 
-### Test 2: Simular Error 503
+### Test 2: Simulate 503 Error
 
 ```bash
-# Conectar a la VM
-ssh -i ~/.ssh/vm-webserver-test_key.pem azureuser@<IP-VM>
+# Connect to the VM
+ssh -i ~/.ssh/vm-webserver-test_key.pem azureuser@<VM-IP>
 
-# Activar modo error 503
+# Activate error 503 mode
 curl http://localhost:5000/set-mode/error503
 
-# Verificar
+# Verify
 curl http://localhost/health
-# Debería retornar: 503 Service Unavailable
+# Should return: 503 Service Unavailable
 ```
 
-**⏱️ Esperar 10-15 minutos** y verificar:
+**Wait 10-15 minutes** and verify:
 
-1. **Monitor → Alerts**: Alerta activa con nombre `alert-503-restart-vm`
-2. **Automation Account → Jobs**: Job `Restart-VMOn503` en ejecución
-3. **VM Producción → Activity log**: Evento "Restart Virtual Machine"
+1. **Monitor → Alerts**: Active alert named `alert-503-restart-vm`
+2. **Automation Account → Jobs**: Job `Restart-VMOn503` running
+3. **Production VM → Activity log**: Event "Restart Virtual Machine"
 
-### Test 3: Verificar que 404 NO Reinicia
+### Test 3: Verify that 404 Does NOT Restart
 
 ```bash
-# Cambiar a modo 404
-curl http://<IP-VM>/set-mode/error404
+# Change to 404 mode
+curl http://<VM-IP>/set-mode/error404
 
-# Verificar
-curl http://<IP-VM>/health
-# Debería retornar: 404 Not Found
+# Verify
+curl http://<VM-IP>/health
+# Should return: 404 Not Found
 ```
 
-**⏱️ Esperar 10-15 minutos** y verificar:
+**Wait 10-15 minutes** and verify:
 
-- ✅ Availability test registra el 404
-- ✅ **NO** se dispara ninguna alerta
-- ✅ **NO** se reinicia la VM
+- Availability test records the 404
+- **NO** alert is triggered
+- **NO** VM restart occurs
 
-### Test 4: Restaurar a Normal
+### Test 4: Restore to Normal
 
 ```bash
-# Volver a modo saludable
-curl http://<IP-VM>/set-mode/healthy
+# Return to healthy mode
+curl http://<VM-IP>/set-mode/healthy
 
-# Verificar
-curl http://<IP-VM>/health
-# Debería retornar: 200 OK
+# Verify
+curl http://<VM-IP>/health
+# Should return: 200 OK
 ```
 
-## 🔍 Troubleshooting
+## Troubleshooting
 
-### Problema: No llegan datos a Application Insights
+### Problem: No data arriving at Application Insights
 
-**Solución:**
+**Solution:**
 ```bash
-# Verificar que el test está activo
-Application Insights → Availability → Verificar test habilitado
+# Verify that the test is active
+Application Insights → Availability → Verify test enabled
 
-# Verificar que la VM es accesible públicamente
-curl http://<IP-VM>/health
+# Verify that the VM is publicly accessible
+curl http://<VM-IP>/health
 ```
 
-### Problema: La alerta no se dispara
+### Problem: Alert is not triggered
 
-**Solución:**
+**Solution:**
 ```kusto
-// Ejecutar query manualmente en Log Analytics
+// Execute query manually in Log Analytics
 availabilityResults
 | where timestamp > ago(1h)
 | where name == "test-webserver-health"
 | summarize count() by resultCode
 ```
 
-Verificar que hay registros con `resultCode == "503"`.
+Verify that there are records with `resultCode == "503"`.
 
-### Problema: Runbook falla con error de permisos
+### Problem: Runbook fails with permissions error
 
-**Solución:**
+**Solution:**
 ```
-1. Verificar que Managed Identity está habilitada
-2. Verificar rol "Virtual Machine Contributor" en IAM
-3. Esperar 5-10 minutos para propagación de permisos
-```
-
-### Problema: VM no se reinicia
-
-**Solución:**
-```
-1. Automation Account → Jobs → Seleccionar último job
-2. Ver "Output" y "Errors" para detalles
-3. Verificar que los parámetros ResourceGroupName y VMName son correctos
+1. Verify that Managed Identity is enabled
+2. Verify "Virtual Machine Contributor" role in IAM
+3. Wait 5-10 minutes for permission propagation
 ```
 
-## 📊 Endpoints Disponibles
+### Problem: VM does not restart
 
-| Endpoint | Descripción | Código HTTP |
-|----------|-------------|-------------|
-| `/health` | Endpoint de salud (modo actual) | Variable |
-| `/set-mode/healthy` | Establecer modo saludable | 200 |
-| `/set-mode/error503` | Simular error 503 | 200 |
-| `/set-mode/error404` | Simular error 404 | 200 |
-| `/status` | Ver modo actual | 200 |
+**Solution:**
+```
+1. Automation Account → Jobs → Select last job
+2. View "Output" and "Errors" for details
+3. Verify that ResourceGroupName and VMName parameters are correct
+```
 
-## 📈 Métricas y Logs
+## Available Endpoints
 
-### Ver logs del Availability Test
+| Endpoint | Description | HTTP Code |
+|----------|-------------|-----------|
+| `/health` | Health endpoint (current mode) | Variable |
+| `/set-mode/healthy` | Set healthy mode | 200 |
+| `/set-mode/error503` | Simulate 503 error | 200 |
+| `/set-mode/error404` | Simulate 404 error | 200 |
+| `/status` | View current mode | 200 |
+
+## Metrics and Logs
+
+### View Availability Test logs
 
 ```kusto
 availabilityResults
@@ -494,7 +494,7 @@ availabilityResults
 | order by timestamp desc
 ```
 
-### Ver historial de alertas
+### View alert history
 
 ```kusto
 AzureActivity
@@ -503,31 +503,30 @@ AzureActivity
 | project timestamp, Caller, OperationNameValue, ActivityStatusValue
 ```
 
-### Ver historial de reinicios de VM
+### View VM restart history
 
 ```
 VM → Activity log → Filter: "Restart Virtual Machine"
 ```
 
-## 🗑️ Limpieza de Recursos
+## Resource Cleanup
 
-Para eliminar todos los recursos creados:
+To delete all created resources:
 
 ```bash
-# Desde Azure Portal
+# From Azure Portal
 Resource Groups → rg-test-monitoring → Delete resource group
 ```
 
-O desde Azure CLI:
+Or from Azure CLI:
 
 ```bash
 az group delete --name rg-test-monitoring --yes --no-wait
 ```
 
-## 📝 Notas Importantes
+## Important Notes
 
-- **Costos**: Este setup genera costos por VMs, Application Insights y Automation
-- **Availability Tests**: Limitado a 100 tests por suscripción
-- **Runbook Jobs**: Historial limitado a 30 días
-- **Frecuencia mínima**: Los tests de disponibilidad tienen frecuencia mínima de 5 minutos
-
+- **Costs**: This setup generates costs for VMs, Application Insights, and Automation
+- **Availability Tests**: Limited to 100 tests per subscription
+- **Runbook Jobs**: History limited to 30 days
+- **Minimum frequency**: Availability tests have a minimum frequency of 5 minutes
