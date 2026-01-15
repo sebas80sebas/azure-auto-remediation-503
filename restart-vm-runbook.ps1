@@ -18,7 +18,7 @@ try {
     # Conectar usando Managed Identity
     Write-Output "Conectando a Azure con Managed Identity..."
     Connect-AzAccount -Identity -ErrorAction Stop
-    Write-Output "✓ Conexión exitosa"
+    Write-Output "Conexión exitosa"
     
     # Obtener información de la VM
     Write-Output "`nObteniendo estado de la VM..."
@@ -38,16 +38,16 @@ try {
     if ($powerState -eq "VM running") {
         Write-Output "`nReiniciando VM..."
         Restart-AzVM -ResourceGroupName $ResourceGroupName -Name $VMName -NoWait -ErrorAction Stop
-        Write-Output "✓ Comando de reinicio enviado exitosamente"
+        Write-Output " Comando de reinicio enviado exitosamente"
         Write-Output "  La VM se reiniciará en los próximos minutos"
     }
     elseif ($powerState -eq "VM stopped" -or $powerState -eq "VM deallocated") {
-        Write-Output "`n⚠ VM está detenida. Iniciando VM..."
+        Write-Output "`n VM está detenida. Iniciando VM..."
         Start-AzVM -ResourceGroupName $ResourceGroupName -Name $VMName -NoWait -ErrorAction Stop
-        Write-Output "✓ Comando de inicio enviado"
+        Write-Output " Comando de inicio enviado"
     }
     else {
-        Write-Output "`n⚠ Estado inesperado de VM: $powerState"
+        Write-Output "`n Estado inesperado de VM: $powerState"
         Write-Output "  No se realiza ninguna acción"
     }
     
@@ -56,7 +56,7 @@ try {
     Write-Output "=========================================="
 }
 catch {
-    Write-Error "❌ Error en el runbook: $($_.Exception.Message)"
+    Write-Error " Error en el runbook: $($_.Exception.Message)"
     Write-Error "Stack Trace: $($_.Exception.StackTrace)"
     throw
 }
